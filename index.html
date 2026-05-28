@@ -1,0 +1,934 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<title>单词星球</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html { height: 100%; overflow: hidden; }
+:root {
+  --primary: #4ECDC4;
+  --primary-dark: #3BA99C;
+  --coral: #FF6B6B;
+  --bg: #FFF8F0;
+  --card: #FFFFFF;
+  --success: #51CF66;
+  --star: #FFD43B;
+  --text: #2D3436;
+  --text-light: #636e72;
+  --shadow: 0 4px 15px rgba(0,0,0,0.08);
+}
+body {
+  font-family: -apple-system, "PingFang SC", "Helvetica Neue", sans-serif;
+  background: var(--bg); color: var(--text);
+  max-width: 480px; margin: 0 auto;
+  height: 100%; overflow: hidden;
+  position: relative;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* === Tab Bar === */
+.tab-bar {
+  position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+  width: 100%; max-width: 480px;
+  display: flex; background: white;
+  border-top: 1px solid #eee; z-index: 100;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.tab-bar .tab {
+  flex: 1; text-align: center; padding: 10px 0 8px;
+  font-size: 11px; color: #999; cursor: pointer;
+  transition: color 0.2s; user-select: none;
+}
+.tab-bar .tab.active { color: var(--primary); }
+.tab-bar .tab .icon { font-size: 22px; display: block; margin-bottom: 2px; }
+
+/* === Pages === */
+.page {
+  display: none; padding: 20px 20px 80px;
+  height: 100%; overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.page.active { display: block; }
+
+/* === Home === */
+.home-header { text-align: center; padding: 24px 0 16px; }
+.home-header h1 { font-size: 28px; margin-bottom: 4px; }
+.home-header .subtitle { color: var(--text-light); font-size: 14px; }
+
+.stats-row { display: flex; gap: 10px; margin: 16px 0; }
+.stat-card {
+  flex: 1; background: var(--card); border-radius: 16px;
+  padding: 14px 8px; text-align: center; box-shadow: var(--shadow);
+}
+.stat-card .num { font-size: 26px; font-weight: 700; color: var(--primary); }
+.stat-card .label { font-size: 11px; color: var(--text-light); margin-top: 2px; }
+.stat-card .num.star-color { color: var(--star); }
+
+.start-btn {
+  display: block; width: 100%; padding: 16px;
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  color: white; border: none; border-radius: 16px;
+  font-size: 18px; font-weight: 700; cursor: pointer;
+  box-shadow: 0 6px 20px rgba(78,205,196,0.4);
+  transition: transform 0.15s; margin-top: 16px;
+}
+.start-btn:active { transform: scale(0.96); }
+.start-btn:disabled { opacity: 0.5; cursor: default; transform: none; }
+
+.today-words {
+  margin-top: 16px; background: var(--card);
+  border-radius: 16px; padding: 14px; box-shadow: var(--shadow);
+}
+.today-words h3 { font-size: 14px; margin-bottom: 10px; color: var(--text-light); }
+.word-preview { display: flex; flex-wrap: wrap; gap: 6px; }
+.word-chip {
+  background: #f0faf9; color: var(--primary-dark);
+  padding: 5px 10px; border-radius: 20px; font-size: 13px; font-weight: 500;
+}
+
+/* Data management */
+.data-section {
+  margin-top: 16px; display: flex; gap: 10px;
+}
+.data-btn {
+  flex: 1; padding: 10px; background: var(--card);
+  border: 1px solid #eee; border-radius: 12px;
+  font-size: 13px; color: var(--text-light); cursor: pointer;
+  text-align: center; transition: transform 0.15s;
+}
+.data-btn:active { transform: scale(0.96); }
+
+/* === Learn Page === */
+.learn-header {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 10px 0 16px;
+}
+.learn-header .back {
+  font-size: 28px; cursor: pointer; color: var(--text-light);
+  padding: 4px 8px; user-select: none;
+}
+.progress-text { font-size: 14px; color: var(--text-light); }
+.progress-bar { height: 6px; background: #eee; border-radius: 3px; margin-bottom: 20px; }
+.progress-fill { height: 100%; background: var(--primary); border-radius: 3px; transition: width 0.3s; }
+
+.word-card {
+  background: var(--card); border-radius: 24px;
+  padding: 28px 20px; text-align: center;
+  box-shadow: var(--shadow);
+}
+.word-card .word { font-size: 34px; font-weight: 700; letter-spacing: 1px; }
+.word-card .phonics { font-size: 17px; color: #999; margin-top: 4px; }
+.word-card .meaning { font-size: 20px; margin-top: 10px; color: var(--text); }
+
+.tts-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  margin-top: 16px; padding: 10px 24px;
+  background: #f0faf9; border: 2px solid var(--primary);
+  border-radius: 30px; font-size: 15px; color: var(--primary-dark);
+  cursor: pointer; font-weight: 600; user-select: none;
+  transition: transform 0.15s;
+}
+.tts-btn:active { transform: scale(0.94); }
+
+/* Handwriting Canvas */
+.canvas-wrap { margin-top: 16px; position: relative; }
+.canvas-wrap canvas {
+  width: 100%; height: 140px;
+  border: 2px dashed #ddd; border-radius: 16px;
+  background: #fafafa; touch-action: none;
+  cursor: crosshair;
+}
+.canvas-label {
+  position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
+  color: #ccc; font-size: 15px; pointer-events: none;
+}
+.clear-canvas {
+  margin-top: 6px; padding: 5px 14px;
+  background: none; border: 1px solid #ddd; border-radius: 20px;
+  color: #999; font-size: 12px; cursor: pointer;
+}
+
+.nav-btns { display: flex; gap: 10px; margin-top: 20px; }
+.nav-btns button {
+  flex: 1; padding: 14px; border: none; border-radius: 14px;
+  font-size: 16px; font-weight: 600; cursor: pointer;
+  transition: transform 0.15s; user-select: none;
+  min-height: 48px;
+}
+.nav-btns button:active { transform: scale(0.95); }
+.btn-prev { background: #f0f0f0; color: var(--text-light); }
+.btn-next { background: var(--primary); color: white; }
+.btn-exam { background: linear-gradient(135deg, var(--coral), #ee5a5a); color: white; }
+
+/* === Exam Page === */
+.exam-card {
+  background: var(--card); border-radius: 24px;
+  padding: 28px 20px; text-align: center;
+  box-shadow: var(--shadow);
+}
+.exam-card .prompt { font-size: 15px; color: var(--text-light); margin-bottom: 12px; }
+.exam-card .word { font-size: 30px; font-weight: 700; }
+.exam-card .phonics { font-size: 17px; color: #999; margin-top: 4px; }
+
+.exam-actions { display: flex; gap: 10px; margin-top: 16px; }
+.exam-actions button {
+  flex: 1; padding: 12px; border: none; border-radius: 14px;
+  font-size: 14px; font-weight: 600; cursor: pointer;
+  transition: transform 0.15s; min-height: 48px; user-select: none;
+}
+.exam-actions button:active { transform: scale(0.95); }
+.btn-mistake { background: #fff3f3; color: var(--coral); border: 1px solid #ffd4d4; }
+.btn-mistake.added { background: #f0fff0; color: var(--success); border-color: #c8f7c8; }
+.btn-submit { background: var(--primary); color: white; }
+.btn-dictation {
+  margin-top: 10px; padding: 10px; width: 100%;
+  background: #fff3f3; color: var(--coral); border: 1px solid #ffd4d4;
+  border-radius: 12px; font-size: 14px; cursor: pointer; min-height: 44px;
+}
+
+/* === Calendar === */
+.cal-header {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 16px 0 12px;
+}
+.cal-header h2 { font-size: 20px; }
+.cal-nav {
+  font-size: 24px; cursor: pointer; color: var(--text-light);
+  padding: 4px 12px; user-select: none;
+}
+.cal-grid {
+  display: grid; grid-template-columns: repeat(7, 1fr);
+  gap: 4px; text-align: center;
+}
+.cal-grid .day-label { font-size: 12px; color: #999; padding: 6px 0; }
+.cal-grid .day {
+  aspect-ratio: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  border-radius: 12px; font-size: 14px; cursor: pointer; position: relative;
+}
+.cal-grid .day.empty { cursor: default; }
+.cal-grid .day.done { background: #e8faf8; color: var(--primary-dark); font-weight: 600; }
+.cal-grid .day.done::after { content: "⭐"; font-size: 9px; }
+.cal-grid .day.today {
+  background: var(--primary); color: white; font-weight: 700;
+  box-shadow: 0 3px 10px rgba(78,205,196,0.4);
+}
+.cal-grid .day.future { color: #ccc; }
+
+/* === Mistakes === */
+.mistake-list { margin-top: 12px; }
+.mistake-item {
+  background: var(--card); border-radius: 16px;
+  padding: 14px; margin-bottom: 10px;
+  box-shadow: var(--shadow);
+  display: flex; justify-content: space-between; align-items: center;
+}
+.mistake-item .info .word { font-size: 17px; font-weight: 600; }
+.mistake-item .info .meaning { font-size: 13px; color: var(--text-light); }
+.mistake-item .info .meta { font-size: 11px; color: #bbb; margin-top: 2px; }
+.mistake-item .remove-btn {
+  background: #f0fff0; color: var(--success); border: none;
+  padding: 8px 12px; border-radius: 12px; font-size: 12px; cursor: pointer;
+  min-height: 36px; white-space: nowrap;
+}
+.empty-state { text-align: center; padding: 60px 20px; color: #ccc; }
+.empty-state .icon { font-size: 48px; margin-bottom: 12px; }
+
+/* === Complete Screen === */
+.complete-screen {
+  display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+  background: linear-gradient(135deg, #4ECDC4, #44B09E);
+  z-index: 200; flex-direction: column;
+  align-items: center; justify-content: center;
+  color: white; text-align: center; padding: 20px;
+}
+.complete-screen.show { display: flex; }
+.complete-screen .big-star { font-size: 72px; margin-bottom: 16px; animation: bounce 0.6s; }
+.complete-screen h2 { font-size: 26px; margin-bottom: 8px; }
+.complete-screen p { font-size: 15px; opacity: 0.9; margin-bottom: 24px; line-height: 1.6; }
+.complete-screen button {
+  padding: 14px 40px; background: white; color: var(--primary-dark);
+  border: none; border-radius: 14px; font-size: 16px; font-weight: 600;
+  cursor: pointer; min-height: 48px;
+}
+
+/* === Toast === */
+.toast {
+  position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+  background: rgba(0,0,0,0.75); color: white; padding: 10px 20px;
+  border-radius: 20px; font-size: 14px; z-index: 999;
+  opacity: 0; transition: opacity 0.3s; pointer-events: none;
+}
+.toast.show { opacity: 1; }
+
+@keyframes bounce {
+  0% { transform: scale(0); }
+  50% { transform: scale(1.3); }
+  70% { transform: scale(0.9); }
+  100% { transform: scale(1); }
+}
+@keyframes fadeSlideIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+</style>
+</head>
+<body>
+
+<div class="toast" id="toast"></div>
+
+<!-- ===== Tab Bar ===== -->
+<nav class="tab-bar">
+  <div class="tab active" onclick="showPage('home')"><span class="icon">🏠</span>首页</div>
+  <div class="tab" onclick="showPage('calendar')"><span class="icon">📅</span>日历</div>
+  <div class="tab" onclick="showPage('mistakes')"><span class="icon">📕</span>错题本</div>
+</nav>
+
+<!-- ===== Home ===== -->
+<div id="page-home" class="page active">
+  <div class="home-header">
+    <h1>🌍 单词星球</h1>
+    <div class="subtitle">每天10个单词，积少成多</div>
+  </div>
+  <div class="stats-row">
+    <div class="stat-card"><div class="num" id="stat-streak">0</div><div class="label">连续打卡</div></div>
+    <div class="stat-card"><div class="num" id="stat-words">0</div><div class="label">已学单词</div></div>
+    <div class="stat-card"><div class="num star-color" id="stat-stars">0</div><div class="label">⭐ 星星</div></div>
+  </div>
+  <div class="stats-row">
+    <div class="stat-card"><div class="num" id="stat-days">0</div><div class="label">学习天数</div></div>
+    <div class="stat-card"><div class="num" id="stat-total">300</div><div class="label">总天数</div></div>
+    <div class="stat-card"><div class="num" id="stat-pct">0%</div><div class="label">总进度</div></div>
+  </div>
+  <button class="start-btn" id="start-btn" onclick="startLearn()">📖 开始今日学习</button>
+  <div class="today-words" id="today-preview"></div>
+  <div class="data-section">
+    <div class="data-btn" onclick="exportData()">📤 导出进度</div>
+    <div class="data-btn" onclick="document.getElementById('import-file').click()">📥 导入进度</div>
+    <input type="file" id="import-file" accept=".json" style="display:none" onchange="importData(event)">
+  </div>
+</div>
+
+<!-- ===== Learn ===== -->
+<div id="page-learn" class="page">
+  <div class="learn-header">
+    <span class="back" onclick="exitLearn()">←</span>
+    <span class="progress-text" id="learn-progress-text">1/10</span>
+  </div>
+  <div class="progress-bar"><div class="progress-fill" id="learn-progress-bar"></div></div>
+  <div class="word-card" id="word-card">
+    <div class="word" id="learn-word"></div>
+    <div class="phonics" id="learn-phonics"></div>
+    <div class="meaning" id="learn-meaning"></div>
+    <button class="tts-btn" onclick="speakCurrent()">🔊 朗读</button>
+    <div class="canvas-wrap">
+      <canvas id="learn-canvas"></canvas>
+      <div class="canvas-label" id="canvas-label">✍️ 手写练习区</div>
+    </div>
+    <button class="clear-canvas" onclick="clearCanvas('learn')">清除</button>
+  </div>
+  <div class="nav-btns">
+    <button class="btn-prev" id="btn-prev" onclick="prevWord()">← 上一个</button>
+    <button class="btn-next" id="btn-next" onclick="nextWord()">下一个 →</button>
+  </div>
+</div>
+
+<!-- ===== Exam ===== -->
+<div id="page-exam" class="page">
+  <div class="learn-header">
+    <span class="back" onclick="exitLearn()">←</span>
+    <span class="progress-text" id="exam-progress-text">考试 1/10</span>
+  </div>
+  <div class="progress-bar"><div class="progress-fill" id="exam-progress-bar"></div></div>
+  <div id="exam-read" class="exam-card">
+    <div class="prompt">请朗读这个单词：</div>
+    <div class="word" id="exam-word"></div>
+    <div class="phonics" id="exam-phonics"></div>
+    <button class="tts-btn" onclick="speakExam()" style="margin-top:12px">🔊 先听一遍</button>
+    <div class="exam-actions" style="margin-top:16px">
+      <button class="btn-mistake" id="btn-exam-mistake" onclick="toggleExamMistake()">📕 加入错题本</button>
+      <button class="btn-submit" onclick="examNext()">下一个 →</button>
+    </div>
+    <button class="btn-dictation" onclick="showDictation()">✏️ 进入默写</button>
+  </div>
+  <div id="exam-dictation" class="exam-card" style="display:none">
+    <div class="prompt">默写这个单词（单词已隐藏）</div>
+    <button class="tts-btn" onclick="speakExam()" style="margin-top:10px">🔊 播放读音</button>
+    <div class="canvas-wrap" style="margin-top:12px">
+      <canvas id="exam-canvas"></canvas>
+      <div class="canvas-label" id="exam-canvas-label">✍️ 在此默写</div>
+    </div>
+    <div class="exam-actions" style="margin-top:12px">
+      <button class="btn-mistake" onclick="toggleExamMistake()" id="btn-exam-mistake2">📕 错题本</button>
+      <button class="clear-canvas" onclick="clearCanvas('exam')" style="margin:0;min-height:48px;flex:0.5">清除</button>
+      <button class="btn-submit" onclick="submitDictation()">提交 ✓</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Calendar ===== -->
+<div id="page-calendar" class="page">
+  <div class="cal-header">
+    <span class="cal-nav" onclick="calNav(-1)">‹</span>
+    <h2 id="cal-title"></h2>
+    <span class="cal-nav" onclick="calNav(1)">›</span>
+  </div>
+  <div class="cal-grid" id="cal-grid"></div>
+  <div style="margin-top:20px;text-align:center;color:#999;font-size:13px" id="cal-summary"></div>
+</div>
+
+<!-- ===== Mistakes ===== -->
+<div id="page-mistakes" class="page">
+  <h2 style="padding:16px 0 0">📕 错题本</h2>
+  <div id="mistake-list" class="mistake-list"></div>
+</div>
+
+<!-- ===== Complete ===== -->
+<div class="complete-screen" id="complete-screen">
+  <div class="big-star">⭐</div>
+  <h2>太棒了！</h2>
+  <p id="complete-msg">今日学习完成！</p>
+  <button onclick="completeBack()">返回首页</button>
+</div>
+
+<!-- 3000-word dataset -->
+<script src="words.js"></script>
+
+<script>
+// ============================================================
+// Constants
+// ============================================================
+const LS_KEY = 'wordplanet_v2';
+const WORDS_PER_DAY = 10;
+const TOTAL_DAYS = Math.ceil(WORDS_ALL.length / WORDS_PER_DAY);
+
+// ============================================================
+// State
+// ============================================================
+let state = loadState();
+let currentIdx = 0;
+let examIdx = 0;
+let examMistakeAdded = false;
+let todayWords = [];
+let calMonth = new Date().getMonth();
+let calYear = new Date().getFullYear();
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch(e) {}
+  return { days: {}, mistakes: {}, stars: 0, nextDay: 1 };
+}
+function saveState() {
+  localStorage.setItem(LS_KEY, JSON.stringify(state));
+}
+function todayStr() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+// 方案E: 断档接续 — nextDay tracks which day_index to learn next
+function getCurrentDay() {
+  const today = todayStr();
+  // If today already started, use that day's dayIndex
+  if (state.days[today] && state.days[today].dayIndex) return state.days[today].dayIndex;
+  // Otherwise use nextDay (sequential, never skips)
+  if (!state.nextDay) state.nextDay = 1;
+  return state.nextDay;
+}
+
+function getWordsForDay(dayIndex) {
+  return WORDS_ALL.filter(w => w.day === dayIndex);
+}
+
+// ============================================================
+// Toast
+// ============================================================
+let toastTimer;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2000);
+}
+
+// ============================================================
+// Pages
+// ============================================================
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  document.querySelectorAll('.tab').forEach((t, i) => {
+    t.classList.toggle('active', ['home','calendar','mistakes'][i] === name);
+  });
+  // Show/hide tab bar
+  document.querySelector('.tab-bar').style.display = (name === 'learn' || name === 'exam') ? 'none' : 'flex';
+  if (name === 'home') refreshHome();
+  if (name === 'calendar') renderCalendar();
+  if (name === 'mistakes') renderMistakes();
+}
+
+// ============================================================
+// Home
+// ============================================================
+function refreshHome() {
+  const today = todayStr();
+  const dayData = state.days[today];
+  const streak = calcStreak();
+  const completedDays = Object.keys(state.days).filter(k => state.days[k].status === 2).length;
+  const totalWords = completedDays * WORDS_PER_DAY;
+
+  document.getElementById('stat-streak').textContent = streak;
+  document.getElementById('stat-words').textContent = totalWords;
+  document.getElementById('stat-stars').textContent = state.stars || 0;
+  document.getElementById('stat-days').textContent = completedDays;
+  document.getElementById('stat-total').textContent = TOTAL_DAYS;
+  document.getElementById('stat-pct').textContent = Math.round(completedDays / TOTAL_DAYS * 100) + '%';
+
+  const btn = document.getElementById('start-btn');
+  if (dayData && dayData.status === 2) {
+    btn.textContent = '✅ 今日已完成';
+    btn.disabled = true;
+  } else if (dayData && dayData.status === 1) {
+    btn.textContent = '📖 继续学习';
+    btn.disabled = false;
+  } else {
+    btn.textContent = '📖 开始今日学习';
+    btn.disabled = false;
+  }
+
+  const dayIndex = getCurrentDay();
+  todayWords = getWordsForDay(dayIndex);
+  const preview = document.getElementById('today-preview');
+  if (todayWords.length) {
+    preview.innerHTML = `<h3>📋 今日单词（第${dayIndex}天 / 共${TOTAL_DAYS}天）</h3>
+      <div class="word-preview">${todayWords.map(w => `<span class="word-chip">${w.word}</span>`).join('')}</div>`;
+  } else if (dayIndex > TOTAL_DAYS) {
+    preview.innerHTML = `<h3>🎉 恭喜！所有 ${WORDS_ALL.length} 个单词已学完！</h3>`;
+    btn.textContent = '🎉 全部完成';
+    btn.disabled = true;
+  } else {
+    preview.innerHTML = '';
+  }
+}
+
+function calcStreak() {
+  let streak = 0;
+  let d = new Date();
+  const today = todayStr();
+  if (!state.days[today] || state.days[today].status !== 2) {
+    d.setDate(d.getDate() - 1);
+  }
+  while (true) {
+    const ds = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    if (state.days[ds] && state.days[ds].status === 2) {
+      streak++;
+      d.setDate(d.getDate() - 1);
+    } else break;
+  }
+  return streak;
+}
+
+// ============================================================
+// Export / Import
+// ============================================================
+function exportData() {
+  const data = {
+    version: 2,
+    exported: new Date().toISOString(),
+    state: state
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `单词星球_进度_${todayStr()}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('✅ 进度已导出');
+}
+
+function importData(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (data.state && data.state.days) {
+        state = data.state;
+        if (!state.nextDay) state.nextDay = 1;
+        saveState();
+        refreshHome();
+        showToast('✅ 进度已恢复');
+      } else {
+        showToast('❌ 文件格式不正确');
+      }
+    } catch(err) {
+      showToast('❌ 读取失败');
+    }
+  };
+  reader.readAsText(file);
+  event.target.value = '';
+}
+
+// ============================================================
+// Learn
+// ============================================================
+function startLearn() {
+  const dayIndex = getCurrentDay();
+  todayWords = getWordsForDay(dayIndex);
+  if (!todayWords.length) return;
+
+  const today = todayStr();
+  if (!state.days[today]) {
+    state.days[today] = { status: 1, dayIndex, stars: 0 };
+    saveState();
+  }
+
+  currentIdx = 0;
+  showPage('learn');
+  renderLearnCard();
+  setTimeout(() => initCanvas('learn-canvas'), 50);
+}
+
+function renderLearnCard() {
+  const w = todayWords[currentIdx];
+  document.getElementById('learn-word').textContent = w.word;
+  document.getElementById('learn-phonics').textContent = w.phonics;
+  document.getElementById('learn-meaning').textContent = w.meaning;
+  document.getElementById('learn-progress-text').textContent = `${currentIdx + 1}/${todayWords.length}`;
+  document.getElementById('learn-progress-bar').style.width = `${(currentIdx + 1) / todayWords.length * 100}%`;
+  document.getElementById('btn-prev').style.visibility = currentIdx === 0 ? 'hidden' : 'visible';
+
+  const isLast = currentIdx === todayWords.length - 1;
+  const btnNext = document.getElementById('btn-next');
+  if (isLast) {
+    btnNext.textContent = '进入考试 →';
+    btnNext.className = 'btn-exam';
+    btnNext.onclick = () => startExam();
+  } else {
+    btnNext.textContent = '下一个 →';
+    btnNext.className = 'btn-next';
+    btnNext.onclick = () => nextWord();
+  }
+  clearCanvas('learn');
+  document.getElementById('canvas-label').style.display = '';
+}
+
+function prevWord() { if (currentIdx > 0) { currentIdx--; renderLearnCard(); } }
+function nextWord() { if (currentIdx < todayWords.length - 1) { currentIdx++; renderLearnCard(); } }
+function exitLearn() { showPage('home'); }
+
+// ============================================================
+// TTS
+// ============================================================
+function speak(text) {
+  if ('speechSynthesis' in window) {
+    window.speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = 'en-US'; u.rate = 0.8;
+    window.speechSynthesis.speak(u);
+  }
+}
+function speakCurrent() { speak(todayWords[currentIdx].word); }
+function speakExam() { speak(todayWords[examIdx].word); }
+
+// ============================================================
+// Canvas (optimized for mobile touch)
+// ============================================================
+function initCanvas(canvasId) {
+  const oldCanvas = document.getElementById(canvasId);
+  if (!oldCanvas) return;
+
+  // Clone to remove old listeners
+  const canvas = oldCanvas.cloneNode(true);
+  oldCanvas.parentNode.replaceChild(canvas, oldCanvas);
+  canvas.id = canvasId;
+
+  const rect = canvas.getBoundingClientRect();
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = rect.width * dpr;
+  canvas.height = rect.height * dpr;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+  ctx.strokeStyle = '#2D3436';
+  ctx.lineWidth = 2.5;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+
+  let isDrawing = false;
+  let lastX, lastY;
+
+  const getPos = (e) => {
+    const r = canvas.getBoundingClientRect();
+    const t = e.touches ? e.touches[0] : e;
+    return { x: t.clientX - r.left, y: t.clientY - r.top };
+  };
+
+  const start = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    isDrawing = true;
+    const p = getPos(e);
+    lastX = p.x; lastY = p.y;
+    ctx.beginPath();
+    ctx.moveTo(p.x, p.y);
+    // hide label
+    const labelId = canvasId === 'learn-canvas' ? 'canvas-label' : 'exam-canvas-label';
+    const label = document.getElementById(labelId);
+    if (label) label.style.display = 'none';
+  };
+
+  const move = (e) => {
+    if (!isDrawing) return;
+    e.preventDefault();
+    e.stopPropagation();
+    const p = getPos(e);
+    // Smooth line with quadratic curve
+    const midX = (lastX + p.x) / 2;
+    const midY = (lastY + p.y) / 2;
+    ctx.quadraticCurveTo(lastX, lastY, midX, midY);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(midX, midY);
+    lastX = p.x; lastY = p.y;
+  };
+
+  const end = (e) => {
+    if (!isDrawing) return;
+    isDrawing = false;
+    ctx.beginPath();
+  };
+
+  canvas.addEventListener('mousedown', start);
+  canvas.addEventListener('mousemove', move);
+  canvas.addEventListener('mouseup', end);
+  canvas.addEventListener('mouseleave', end);
+  canvas.addEventListener('touchstart', start, { passive: false });
+  canvas.addEventListener('touchmove', move, { passive: false });
+  canvas.addEventListener('touchend', end);
+  canvas.addEventListener('touchcancel', end);
+}
+
+function clearCanvas(which) {
+  const id = which === 'learn' ? 'learn-canvas' : 'exam-canvas';
+  const labelId = which === 'learn' ? 'canvas-label' : 'exam-canvas-label';
+  const c = document.getElementById(id);
+  if (c) {
+    const ctx = c.getContext('2d');
+    ctx.clearRect(0, 0, c.width, c.height);
+  }
+  const label = document.getElementById(labelId);
+  if (label) label.style.display = '';
+}
+
+// ============================================================
+// Exam
+// ============================================================
+function startExam() {
+  examIdx = 0;
+  showPage('exam');
+  renderExamCard();
+}
+
+function renderExamCard() {
+  const w = todayWords[examIdx];
+  document.getElementById('exam-word').textContent = w.word;
+  document.getElementById('exam-phonics').textContent = w.phonics;
+  document.getElementById('exam-progress-text').textContent = `考试 ${examIdx + 1}/${todayWords.length}`;
+  document.getElementById('exam-progress-bar').style.width = `${(examIdx + 1) / todayWords.length * 100}%`;
+  document.getElementById('exam-read').style.display = '';
+  document.getElementById('exam-dictation').style.display = 'none';
+  examMistakeAdded = !!state.mistakes[w.id];
+  updateMistakeBtn();
+}
+
+function toggleExamMistake() {
+  const w = todayWords[examIdx];
+  if (!examMistakeAdded) {
+    state.mistakes[w.id] = { word: w.word, meaning: w.meaning, phonics: w.phonics, count: (state.mistakes[w.id]?.count || 0) + 1, date: todayStr() };
+    examMistakeAdded = true;
+    showToast('📕 已加入错题本');
+  } else {
+    delete state.mistakes[w.id];
+    examMistakeAdded = false;
+    showToast('已移出错题本');
+  }
+  saveState();
+  updateMistakeBtn();
+}
+
+function updateMistakeBtn() {
+  ['btn-exam-mistake', 'btn-exam-mistake2'].forEach(id => {
+    const btn = document.getElementById(id);
+    if (!btn) return;
+    if (examMistakeAdded) {
+      btn.textContent = '✅ 已收录';
+      btn.classList.add('added');
+    } else {
+      btn.textContent = '📕 错题本';
+      btn.classList.remove('added');
+    }
+  });
+}
+
+function showDictation() {
+  document.getElementById('exam-read').style.display = 'none';
+  document.getElementById('exam-dictation').style.display = '';
+  setTimeout(() => initCanvas('exam-canvas'), 50);
+}
+
+function submitDictation() { examNext(); }
+
+function examNext() {
+  if (examIdx < todayWords.length - 1) {
+    examIdx++;
+    renderExamCard();
+  } else {
+    finishToday();
+  }
+}
+
+function finishToday() {
+  const today = todayStr();
+  state.days[today].status = 2;
+  state.days[today].stars = 1;
+  state.stars = (state.stars || 0) + 1;
+  // Advance nextDay (方案E: sequential, never skip)
+  state.nextDay = (state.days[today].dayIndex || state.nextDay) + 1;
+
+  const streak = calcStreak();
+  let bonusMsg = '';
+  if (streak === 7)  { state.stars += 3;  bonusMsg = '\n🎉 连续7天打卡奖励 +3 星星！'; }
+  if (streak === 30) { state.stars += 10; bonusMsg = '\n🎉 连续30天打卡奖励 +10 星星！'; }
+  if (streak === 100){ state.stars += 30; bonusMsg = '\n🎉 连续100天打卡奖励 +30 星星！'; }
+
+  saveState();
+  document.getElementById('complete-msg').textContent = `今日学习完成，获得 1 颗星星！${bonusMsg}`;
+  document.getElementById('complete-screen').classList.add('show');
+  launchConfetti();
+}
+
+function completeBack() {
+  document.getElementById('complete-screen').classList.remove('show');
+  showPage('home');
+}
+
+// ============================================================
+// Calendar
+// ============================================================
+function calNav(dir) {
+  calMonth += dir;
+  if (calMonth > 11) { calMonth = 0; calYear++; }
+  if (calMonth < 0) { calMonth = 11; calYear--; }
+  renderCalendar();
+}
+
+function renderCalendar() {
+  const months = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+  document.getElementById('cal-title').textContent = `${calYear}年 ${months[calMonth]}`;
+
+  const grid = document.getElementById('cal-grid');
+  const labels = ['一','二','三','四','五','六','日'];
+  let html = labels.map(l => `<div class="day-label">${l}</div>`).join('');
+
+  const firstDay = new Date(calYear, calMonth, 1).getDay();
+  const shift = firstDay === 0 ? 6 : firstDay - 1;
+  const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
+  const today = new Date();
+
+  for (let i = 0; i < shift; i++) html += `<div class="day empty"></div>`;
+
+  let monthDone = 0;
+  for (let d = 1; d <= daysInMonth; d++) {
+    const ds = `${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const isToday = d === today.getDate() && calMonth === today.getMonth() && calYear === today.getFullYear();
+    const isDone = state.days[ds] && state.days[ds].status === 2;
+    const isFuture = new Date(calYear, calMonth, d) > today;
+    if (isDone) monthDone++;
+    let cls = 'day';
+    if (isToday) cls += ' today';
+    else if (isDone) cls += ' done';
+    else if (isFuture) cls += ' future';
+    html += `<div class="${cls}">${d}</div>`;
+  }
+  grid.innerHTML = html;
+  document.getElementById('cal-summary').textContent = `本月学习 ${monthDone} 天`;
+}
+
+// ============================================================
+// Mistakes
+// ============================================================
+function renderMistakes() {
+  const list = document.getElementById('mistake-list');
+  const ids = Object.keys(state.mistakes);
+  if (!ids.length) {
+    list.innerHTML = `<div class="empty-state"><div class="icon">📭</div><div>暂无错题，继续加油！</div></div>`;
+    return;
+  }
+  list.innerHTML = `<p style="color:#999;font-size:13px;margin-bottom:8px">共 ${ids.length} 个单词</p>` +
+    ids.map(id => {
+      const m = state.mistakes[id];
+      return `<div class="mistake-item">
+        <div class="info">
+          <div class="word">${m.word}</div>
+          <div class="meaning">${m.meaning}</div>
+          <div class="meta">收录于 ${m.date}</div>
+        </div>
+        <button class="remove-btn" onclick="removeMistake(${id})">✅ 已掌握</button>
+      </div>`;
+    }).join('');
+}
+
+function removeMistake(id) {
+  delete state.mistakes[id];
+  saveState();
+  renderMistakes();
+  showToast('已移出错题本');
+}
+
+// ============================================================
+// Confetti
+// ============================================================
+function launchConfetti() {
+  const wrap = document.createElement('div');
+  wrap.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;pointer-events:none;z-index:300;overflow:hidden';
+  document.body.appendChild(wrap);
+  const colors = ['#FF6B6B','#4ECDC4','#FFD43B','#51CF66','#FF9FF3','#54A0FF','#FFA502'];
+  for (let i = 0; i < 50; i++) {
+    const c = document.createElement('div');
+    const size = Math.random() * 10 + 4;
+    const delay = Math.random() * 0.5;
+    const duration = Math.random() * 1.5 + 1.5;
+    const x = Math.random() * 100;
+    const rot = Math.random() * 720;
+    c.style.cssText = `position:absolute;width:${size}px;height:${size}px;background:${colors[i%colors.length]};border-radius:${Math.random()>0.5?'50%':'2px'};left:${x}%;top:-10px;opacity:1;transform:translateY(0) rotate(0deg);transition:transform ${duration}s ease-out ${delay}s, opacity ${duration}s ease-out ${delay}s;`;
+    wrap.appendChild(c);
+    requestAnimationFrame(() => {
+      c.style.transform = `translateY(${window.innerHeight + 50}px) rotate(${rot}deg)`;
+      c.style.opacity = '0';
+    });
+  }
+  setTimeout(() => wrap.remove(), 4000);
+}
+
+// ============================================================
+// Init
+// ============================================================
+// Migrate from v1 if needed
+if (!state.nextDay) {
+  const completedDays = Object.keys(state.days).filter(k => state.days[k].status === 2).length;
+  state.nextDay = completedDays + 1;
+  saveState();
+}
+refreshHome();
+</script>
+</body>
+</html>
