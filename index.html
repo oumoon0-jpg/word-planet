@@ -559,11 +559,15 @@ function saveState() {
   localStorage.setItem(stateKey(currentUser), JSON.stringify(state));
 }
 
-// Migrate old data (before user system) into first user
+// Migrate old data (before user system) into the FIRST user only
 function migrateOldData(name) {
   const old = localStorage.getItem('wordplanet_v2');
-  if (old && !localStorage.getItem(stateKey(name))) {
+  if (!old) return;
+  // Only migrate if no users exist yet (first login ever)
+  const users = getUsers();
+  if (users.length === 0 && !localStorage.getItem(stateKey(name))) {
     localStorage.setItem(stateKey(name), old);
+    localStorage.removeItem('wordplanet_v2'); // clean up old key
   }
 }
 
