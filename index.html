@@ -71,6 +71,12 @@ body {
 .login-user-btn:active { transform: scale(0.97); }
 .login-user-btn .name { font-weight: 600; color: var(--text); }
 .login-user-btn .info { font-size: 12px; color: var(--text-light); }
+.login-user-btn .delete-user {
+  color: #ccc; font-size: 18px; padding: 2px 6px;
+  border: none; background: none; cursor: pointer;
+  transition: color 0.2s;
+}
+.login-user-btn .delete-user:active { color: var(--coral); }
 
 /* === User Bar (top) === */
 .user-bar {
@@ -368,6 +374,62 @@ body {
 }
 .toast.show { opacity: 1; }
 
+/* === Monthly Review === */
+.monthly-banner {
+  margin-top: 16px; padding: 16px; border-radius: 16px;
+  background: linear-gradient(135deg, #fff3e0, #ffe0b2);
+  box-shadow: var(--shadow); text-align: center; cursor: pointer;
+  transition: transform 0.15s;
+}
+.monthly-banner:active { transform: scale(0.97); }
+.monthly-banner .banner-icon { font-size: 36px; margin-bottom: 6px; }
+.monthly-banner h3 { font-size: 16px; color: #e65100; margin-bottom: 4px; }
+.monthly-banner p { font-size: 13px; color: #bf360c; }
+
+.monthly-header {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 10px 0 16px;
+}
+.monthly-header .back {
+  font-size: 28px; cursor: pointer; color: var(--text-light);
+  padding: 4px 8px; user-select: none;
+}
+.monthly-result {
+  background: var(--card); border-radius: 24px;
+  padding: 28px 20px; text-align: center;
+  box-shadow: var(--shadow); margin-top: 16px;
+}
+.monthly-result .score { font-size: 48px; font-weight: 700; color: var(--primary); }
+.monthly-result .score-label { font-size: 14px; color: var(--text-light); margin-top: 4px; }
+.monthly-result .detail { font-size: 15px; margin-top: 12px; line-height: 1.8; }
+
+.monthly-word-display {
+  background: var(--card); border-radius: 24px;
+  padding: 28px 20px; text-align: center;
+  box-shadow: var(--shadow);
+}
+.monthly-word-display .prompt { font-size: 15px; color: var(--text-light); margin-bottom: 8px; }
+.monthly-word-display .meaning-hint {
+  font-size: 18px; color: var(--text); margin-bottom: 16px;
+  background: #f5f5f5; padding: 10px; border-radius: 12px;
+}
+.monthly-input-wrap { margin-top: 12px; }
+.monthly-input {
+  width: 100%; padding: 14px; border: 2px solid #e0e0e0;
+  border-radius: 14px; font-size: 20px; text-align: center;
+  letter-spacing: 2px; outline: none; font-family: monospace;
+}
+.monthly-input:focus { border-color: var(--primary); }
+.monthly-input.correct { border-color: var(--success); background: #f0fff0; }
+.monthly-input.wrong { border-color: var(--coral); background: #fff3f3; }
+.monthly-answer {
+  margin-top: 8px; font-size: 16px; font-weight: 600;
+  display: none;
+}
+.monthly-answer.show { display: block; }
+.monthly-answer.correct { color: var(--success); }
+.monthly-answer.wrong { color: var(--coral); }
+
 @keyframes bounce {
   0% { transform: scale(0); }
   50% { transform: scale(1.3); }
@@ -423,6 +485,7 @@ body {
   </div>
   <button class="start-btn" id="start-btn" onclick="startLearn()">📖 开始今日学习</button>
   <div class="today-words" id="today-preview"></div>
+  <div id="monthly-banner-wrap"></div>
   <div class="data-section">
     <div class="data-btn" onclick="exportData()">📤 导出进度</div>
     <div class="data-btn" onclick="document.getElementById('import-file').click()">📥 导入进度</div>
@@ -504,6 +567,36 @@ body {
   <div id="mistake-list" class="mistake-list"></div>
 </div>
 
+<!-- ===== Monthly Review ===== -->
+<div id="page-monthly" class="page">
+  <div class="monthly-header">
+    <span class="back" onclick="exitMonthly()">←</span>
+    <span class="progress-text" id="monthly-progress-text">月度听写 1/30</span>
+  </div>
+  <div class="progress-bar"><div class="progress-fill" id="monthly-progress-bar"></div></div>
+  <div class="monthly-word-display" id="monthly-card">
+    <div class="prompt" id="monthly-prompt">听读音，写出单词：</div>
+    <div class="meaning-hint" id="monthly-meaning"></div>
+    <button class="tts-btn" onclick="speakMonthlyWord()">🔊 播放读音</button>
+    <div class="monthly-input-wrap">
+      <input class="monthly-input" id="monthly-input" type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
+        placeholder="输入单词..." onkeydown="if(event.key==='Enter')checkMonthlyWord()">
+    </div>
+    <div class="monthly-answer" id="monthly-answer"></div>
+    <div class="exam-actions" style="margin-top:16px">
+      <button class="btn-mistake" id="btn-monthly-mistake" onclick="toggleMonthlyMistake()">📕 错题本</button>
+      <button class="btn-submit" id="btn-monthly-next" onclick="checkMonthlyWord()">确认 ✓</button>
+    </div>
+  </div>
+  <div class="monthly-result" id="monthly-result" style="display:none">
+    <div class="banner-icon" style="font-size:48px">📝</div>
+    <div class="score" id="monthly-score"></div>
+    <div class="score-label">正确率</div>
+    <div class="detail" id="monthly-detail"></div>
+    <button class="start-btn" onclick="exitMonthly()" style="margin-top:20px">返回首页</button>
+  </div>
+</div>
+
 <!-- ===== Day Detail Modal ===== -->
 <div class="day-modal-overlay" id="day-modal-overlay" onclick="closeDayModal(event)">
   <div class="day-modal" id="day-modal">
@@ -573,21 +666,39 @@ function migrateOldData(name) {
 
 function showLoginScreen() {
   document.getElementById('login-screen').classList.remove('hidden');
+  document.getElementById('login-name').value = '';
   const hist = document.getElementById('login-history');
   const users = getUsers();
   if (users.length) {
     let html = '<div class="login-history-title">已有用户，点击直接登录：</div>';
     users.forEach(u => {
       const st = loadUserPreview(u.name);
-      html += `<div class="login-user-btn" onclick="quickLogin('${u.name.replace(/'/g,"\\'")}')">
+      const safeName = u.name.replace(/'/g,"\\'").replace(/"/g,"&quot;");
+      html += `<div class="login-user-btn" onclick="quickLogin('${safeName}')">
         <span class="name">👤 ${u.name}</span>
         <span class="info">已学${st.days}天 / ${st.words}词</span>
+        <span class="delete-user" onclick="event.stopPropagation();deleteUser('${safeName}')">✕</span>
       </div>`;
     });
     hist.innerHTML = html;
   } else {
     hist.innerHTML = '';
   }
+}
+
+function deleteUser(name) {
+  if (!confirm(`确认删除用户「${name}」及其所有学习记录？\n此操作不可恢复！`)) return;
+  // Remove from user list
+  let users = getUsers();
+  users = users.filter(u => u.name !== name);
+  saveUsers(users);
+  // Remove data
+  localStorage.removeItem(stateKey(name));
+  if (localStorage.getItem('wordplanet_lastuser') === name) {
+    localStorage.removeItem('wordplanet_lastuser');
+  }
+  showToast('已删除用户 ' + name);
+  showLoginScreen();
 }
 
 function loadUserPreview(name) {
@@ -687,7 +798,7 @@ function showPage(name) {
   document.querySelectorAll('.tab').forEach((t, i) => {
     t.classList.toggle('active', ['home','calendar','mistakes'][i] === name);
   });
-  document.querySelector('.tab-bar').style.display = (name === 'learn' || name === 'exam') ? 'none' : 'flex';
+  document.querySelector('.tab-bar').style.display = (name === 'learn' || name === 'exam' || name === 'monthly') ? 'none' : 'flex';
   if (name === 'home') refreshHome();
   if (name === 'calendar') renderCalendar();
   if (name === 'mistakes') renderMistakes();
@@ -736,6 +847,65 @@ function refreshHome() {
   } else {
     preview.innerHTML = '';
   }
+
+  // Monthly review banner
+  renderMonthlyBanner();
+}
+
+function renderMonthlyBanner() {
+  const wrap = document.getElementById('monthly-banner-wrap');
+  const review = getMonthlyReviewInfo();
+  if (!review) { wrap.innerHTML = ''; return; }
+
+  const today = new Date();
+  const isFirstDay = today.getDate() === 1;
+  // Show banner on 1st of month, or if there's an unfinished monthly review
+  const monthKey = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}`;
+  const done = state.monthlyReviews && state.monthlyReviews[monthKey];
+
+  if (done) {
+    wrap.innerHTML = `<div class="monthly-banner" style="background:linear-gradient(135deg,#e8faf8,#c8f7c8);cursor:default">
+      <div class="banner-icon">✅</div>
+      <h3 style="color:var(--primary-dark)">本月听写已完成</h3>
+      <p style="color:var(--primary-dark)">正确率 ${done.score}%（${done.correct}/${done.total}）</p>
+    </div>`;
+  } else if (review.words.length > 0) {
+    wrap.innerHTML = `<div class="monthly-banner" onclick="startMonthlyReview()">
+      <div class="banner-icon">📝</div>
+      <h3>月度听写测试</h3>
+      <p>上月学了 ${review.words.length} 个单词，来听写一下吧！</p>
+    </div>`;
+  } else {
+    wrap.innerHTML = '';
+  }
+}
+
+function getMonthlyReviewInfo() {
+  if (!state) return null;
+  const today = new Date();
+  // Get last month
+  let targetMonth = today.getMonth(); // 0-indexed, current month
+  let targetYear = today.getFullYear();
+  // We review LAST month's words
+  targetMonth -= 1;
+  if (targetMonth < 0) { targetMonth = 11; targetYear -= 1; }
+
+  const monthStr = `${targetYear}-${String(targetMonth+1).padStart(2,'0')}`;
+
+  // Find all completed days in last month
+  const words = [];
+  const dayIndices = new Set();
+  Object.keys(state.days).forEach(ds => {
+    if (ds.startsWith(monthStr) && state.days[ds].status === 2 && state.days[ds].dayIndex) {
+      dayIndices.add(state.days[ds].dayIndex);
+    }
+  });
+
+  dayIndices.forEach(di => {
+    getWordsForDay(di).forEach(w => words.push(w));
+  });
+
+  return { words, monthStr };
 }
 
 function calcStreak() {
@@ -1192,6 +1362,156 @@ function removeMistake(id) {
   saveState();
   renderMistakes();
   showToast('已移出错题本');
+}
+
+// ============================================================
+// Monthly Review
+// ============================================================
+let monthlyWords = [];
+let monthlyIdx = 0;
+let monthlyCorrect = 0;
+let monthlyAnswered = false;
+let monthlyMistakeAdded = false;
+
+function startMonthlyReview() {
+  const review = getMonthlyReviewInfo();
+  if (!review || !review.words.length) return;
+
+  // Shuffle words
+  monthlyWords = review.words.slice().sort(() => Math.random() - 0.5);
+  monthlyIdx = 0;
+  monthlyCorrect = 0;
+  monthlyAnswered = false;
+
+  showPage('monthly');
+  document.getElementById('monthly-result').style.display = 'none';
+  document.getElementById('monthly-card').style.display = '';
+  renderMonthlyCard();
+}
+
+function renderMonthlyCard() {
+  const w = monthlyWords[monthlyIdx];
+  const total = monthlyWords.length;
+  document.getElementById('monthly-progress-text').textContent = `月度听写 ${monthlyIdx + 1}/${total}`;
+  document.getElementById('monthly-progress-bar').style.width = `${(monthlyIdx + 1) / total * 100}%`;
+  document.getElementById('monthly-meaning').textContent = `💡 提示：${w.meaning}`;
+  document.getElementById('monthly-input').value = '';
+  document.getElementById('monthly-input').className = 'monthly-input';
+  document.getElementById('monthly-input').disabled = false;
+  document.getElementById('monthly-answer').className = 'monthly-answer';
+  document.getElementById('monthly-answer').style.display = 'none';
+  document.getElementById('btn-monthly-next').textContent = '确认 ✓';
+  monthlyAnswered = false;
+  monthlyMistakeAdded = !!state.mistakes[w.id];
+  updateMonthlyMistakeBtn();
+
+  // Auto play sound
+  setTimeout(() => speakMonthlyWord(), 300);
+  setTimeout(() => document.getElementById('monthly-input').focus(), 400);
+}
+
+function speakMonthlyWord() {
+  if (monthlyWords.length) speak(monthlyWords[monthlyIdx].word);
+}
+
+function checkMonthlyWord() {
+  if (!monthlyAnswered) {
+    // Check answer
+    const input = document.getElementById('monthly-input');
+    const answer = input.value.trim().toLowerCase();
+    const correct = monthlyWords[monthlyIdx].word.toLowerCase();
+    const isCorrect = answer === correct;
+
+    monthlyAnswered = true;
+    input.disabled = true;
+
+    const answerEl = document.getElementById('monthly-answer');
+    if (isCorrect) {
+      monthlyCorrect++;
+      input.className = 'monthly-input correct';
+      answerEl.textContent = '✅ 正确！';
+      answerEl.className = 'monthly-answer show correct';
+    } else {
+      input.className = 'monthly-input wrong';
+      answerEl.textContent = `❌ 正确答案：${monthlyWords[monthlyIdx].word}`;
+      answerEl.className = 'monthly-answer show wrong';
+    }
+    answerEl.style.display = 'block';
+    document.getElementById('btn-monthly-next').textContent = monthlyIdx < monthlyWords.length - 1 ? '下一个 →' : '查看结果';
+  } else {
+    // Next word or finish
+    if (monthlyIdx < monthlyWords.length - 1) {
+      monthlyIdx++;
+      renderMonthlyCard();
+    } else {
+      finishMonthlyReview();
+    }
+  }
+}
+
+function toggleMonthlyMistake() {
+  const w = monthlyWords[monthlyIdx];
+  if (!monthlyMistakeAdded) {
+    state.mistakes[w.id] = { word: w.word, meaning: w.meaning, phonics: w.phonics, count: (state.mistakes[w.id]?.count || 0) + 1, date: todayStr() };
+    monthlyMistakeAdded = true;
+    showToast('📕 已加入错题本');
+  } else {
+    delete state.mistakes[w.id];
+    monthlyMistakeAdded = false;
+    showToast('已移出错题本');
+  }
+  saveState();
+  updateMonthlyMistakeBtn();
+}
+
+function updateMonthlyMistakeBtn() {
+  const btn = document.getElementById('btn-monthly-mistake');
+  if (monthlyMistakeAdded) {
+    btn.textContent = '✅ 已收录';
+    btn.classList.add('added');
+  } else {
+    btn.textContent = '📕 错题本';
+    btn.classList.remove('added');
+  }
+}
+
+function finishMonthlyReview() {
+  const total = monthlyWords.length;
+  const pct = Math.round(monthlyCorrect / total * 100);
+
+  // Save result
+  if (!state.monthlyReviews) state.monthlyReviews = {};
+  const today = new Date();
+  const monthKey = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}`;
+  state.monthlyReviews[monthKey] = {
+    score: pct, correct: monthlyCorrect, total,
+    date: todayStr()
+  };
+
+  // Bonus stars
+  let bonus = 0;
+  if (pct >= 90) bonus = 5;
+  else if (pct >= 70) bonus = 3;
+  else if (pct >= 50) bonus = 1;
+  state.stars = (state.stars || 0) + bonus;
+  saveState();
+
+  document.getElementById('monthly-card').style.display = 'none';
+  document.getElementById('monthly-result').style.display = '';
+  document.getElementById('monthly-score').textContent = pct + '%';
+
+  let detail = `共 ${total} 词，正确 ${monthlyCorrect} 个`;
+  if (bonus > 0) detail += `\n🌟 奖励 ${bonus} 颗星星！`;
+  if (pct === 100) detail += '\n🎉 满分！太厉害了！';
+  else if (pct >= 90) detail += '\n👏 非常棒！';
+  else if (pct < 50) detail += '\n💪 继续加油，多复习错题本！';
+  document.getElementById('monthly-detail').textContent = detail;
+
+  if (pct >= 80) launchConfetti();
+}
+
+function exitMonthly() {
+  showPage('home');
 }
 
 // ============================================================
