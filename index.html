@@ -457,6 +457,7 @@ body {
 <nav class="tab-bar">
   <div class="tab active" onclick="showPage('home')"><span class="icon">🏠</span>首页</div>
   <div class="tab" onclick="showPage('calendar')"><span class="icon">📅</span>日历</div>
+  <div class="tab" onclick="showPage('review')"><span class="icon">📝</span>听写</div>
   <div class="tab" onclick="showPage('mistakes')"><span class="icon">📕</span>错题本</div>
 </nav>
 
@@ -565,6 +566,17 @@ body {
 <div id="page-mistakes" class="page">
   <h2 style="padding:16px 0 0">📕 错题本</h2>
   <div id="mistake-list" class="mistake-list"></div>
+</div>
+
+<!-- ===== Review Hub ===== -->
+<div id="page-review" class="page">
+  <h2 style="padding:16px 0 8px">📝 听写测试</h2>
+  <p style="color:var(--text-light);font-size:13px;margin-bottom:16px">选择要听写的范围</p>
+  <div id="review-options"></div>
+  <div class="empty-state" id="review-empty" style="display:none">
+    <div class="icon">📭</div>
+    <div>还没有学过单词，先去学习吧！</div>
+  </div>
 </div>
 
 <!-- ===== Monthly Review ===== -->
@@ -796,11 +808,12 @@ function showPage(name) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.getElementById('page-' + name).classList.add('active');
   document.querySelectorAll('.tab').forEach((t, i) => {
-    t.classList.toggle('active', ['home','calendar','mistakes'][i] === name);
+    t.classList.toggle('active', ['home','calendar','review','mistakes'][i] === name);
   });
   document.querySelector('.tab-bar').style.display = (name === 'learn' || name === 'exam' || name === 'monthly') ? 'none' : 'flex';
   if (name === 'home') refreshHome();
   if (name === 'calendar') renderCalendar();
+  if (name === 'review') renderReviewHub();
   if (name === 'mistakes') renderMistakes();
 }
 
@@ -1373,15 +1386,121 @@ let monthlyCorrect = 0;
 let monthlyAnswered = false;
 let monthlyMistakeAdded = false;
 
+// ============================================================
+// Review Hub
+// ============================================================
+function renderReviewHub() {
+  if (!state) return;
+  const wrap = document.getElementById('review-options');
+  const emptyEl = document.getElementById('review-empty');
+
+  // Collect completed dayIndices grouped by month
+  const monthMap = {}; // "2026-05" → Set of dayIndex
+  const allDayIndices = new Set();
+  Object.keys(state.days).forEach(ds => {
+    if (state.days[ds].status === 2 && state.days[ds].dayIndex) {
+      const month = ds.substring(0, 7);
+      if (!monthMap[month]) monthMap[month] = new Set();
+      monthMap[month].add(state.days[ds].dayIndex);
+      allDayIndices.add(state.days[ds].dayIndex);
+    }
+  });
+
+  if (allDayIndices.size === 0) {
+    wrap.innerHTML = '';
+    emptyEl.style.display = '';
+    return;
+  }
+  emptyEl.style.display = 'none';
+
+  let html = '';
+
+  // All words review
+  const allWords = [];
+  allDayIndices.forEach(di => getWordsForDay(di).forEach(w => allWords.push(w)));
+  html += `<div class="monthly-banner" onclick="startReview('all')" style="margin-top:0;margin-bottom:12px">
+    <div class="banner-icon">🎯</div>
+    <h3>全部已学单词</h3>
+    <p>共 ${allWords.length} 个单词</p>
+  </div>`;
+
+  // Per-month options
+  const months = Object.keys(monthMap).sort().reverse();
+  const monthNames = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+  months.forEach(m => {
+    const [y, mo] = m.split('-');
+    const count = monthMap[m].size * WORDS_PER_DAY;
+    const days = monthMap[m].size;
+    const mKey = m; // for review lookup
+    const reviewDone = state.monthlyReviews && state.monthlyReviews[m];
+    const doneTag = reviewDone ? `<span style="color:var(--success);font-size:12px"> ✅ ${reviewDone.score}%</span>` : '';
+    html += `<div class="monthly-banner" onclick="startReview('${m}')" style="margin-top:0;margin-bottom:12px;background:linear-gradient(135deg,#f0faf9,#e0f0ef)">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <h3 style="color:var(--primary-dark);font-size:15px">${y}年${monthNames[parseInt(mo)-1]}</h3>
+        ${doneTag}
+      </div>
+      <p style="color:var(--primary-dark);text-align:left">学了${days}天 · ${count}个单词</p>
+    </div>`;
+  });
+
+  // Mistakes review
+  const mistakeIds = Object.keys(state.mistakes);
+  if (mistakeIds.length > 0) {
+    html += `<div class="monthly-banner" onclick="startReview('mistakes')" style="margin-top:0;margin-bottom:12px;background:linear-gradient(135deg,#fff3f3,#ffd4d4)">
+      <div class="banner-icon">📕</div>
+      <h3 style="color:var(--coral)">错题本听写</h3>
+      <p style="color:var(--coral)">${mistakeIds.length} 个错题单词</p>
+    </div>`;
+  }
+
+  wrap.innerHTML = html;
+}
+
+function startReview(scope) {
+  let words = [];
+
+  if (scope === 'all') {
+    const allDayIndices = new Set();
+    Object.keys(state.days).forEach(ds => {
+      if (state.days[ds].status === 2 && state.days[ds].dayIndex) {
+        allDayIndices.add(state.days[ds].dayIndex);
+      }
+    });
+    allDayIndices.forEach(di => getWordsForDay(di).forEach(w => words.push(w)));
+  } else if (scope === 'mistakes') {
+    Object.keys(state.mistakes).forEach(id => {
+      const m = state.mistakes[id];
+      words.push({ id: parseInt(id), word: m.word, meaning: m.meaning, phonics: m.phonics });
+    });
+  } else {
+    // Month scope like "2026-05"
+    const dayIndices = new Set();
+    Object.keys(state.days).forEach(ds => {
+      if (ds.startsWith(scope) && state.days[ds].status === 2 && state.days[ds].dayIndex) {
+        dayIndices.add(state.days[ds].dayIndex);
+      }
+    });
+    dayIndices.forEach(di => getWordsForDay(di).forEach(w => words.push(w)));
+  }
+
+  if (!words.length) { showToast('没有可听写的单词'); return; }
+  startMonthlyReviewWithWords(words, scope);
+}
+
 function startMonthlyReview() {
   const review = getMonthlyReviewInfo();
   if (!review || !review.words.length) return;
+  startMonthlyReviewWithWords(review.words, null);
+}
 
-  // Shuffle words
-  monthlyWords = review.words.slice().sort(() => Math.random() - 0.5);
+let monthlyScope = null;
+
+function startMonthlyReviewWithWords(words, scope) {
+  monthlyWords = words.slice().sort(() => Math.random() - 0.5);
   monthlyIdx = 0;
   monthlyCorrect = 0;
   monthlyAnswered = false;
+  monthlyScope = scope;
 
   showPage('monthly');
   document.getElementById('monthly-result').style.display = 'none';
@@ -1481,8 +1600,7 @@ function finishMonthlyReview() {
 
   // Save result
   if (!state.monthlyReviews) state.monthlyReviews = {};
-  const today = new Date();
-  const monthKey = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}`;
+  const monthKey = monthlyScope || `${new Date().getFullYear()}-${String(new Date().getMonth()+1).padStart(2,'0')}`;
   state.monthlyReviews[monthKey] = {
     score: pct, correct: monthlyCorrect, total,
     date: todayStr()
@@ -1511,7 +1629,7 @@ function finishMonthlyReview() {
 }
 
 function exitMonthly() {
-  showPage('home');
+  showPage('review');
 }
 
 // ============================================================
