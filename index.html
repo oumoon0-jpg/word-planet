@@ -413,15 +413,7 @@ body {
   font-size: 18px; color: var(--text); margin-bottom: 16px;
   background: #f5f5f5; padding: 10px; border-radius: 12px;
 }
-.monthly-input-wrap { margin-top: 12px; }
-.monthly-input {
-  width: 100%; padding: 14px; border: 2px solid #e0e0e0;
-  border-radius: 14px; font-size: 20px; text-align: center;
-  letter-spacing: 2px; outline: none; font-family: monospace;
-}
-.monthly-input:focus { border-color: var(--primary); }
-.monthly-input.correct { border-color: var(--success); background: #f0fff0; }
-.monthly-input.wrong { border-color: var(--coral); background: #fff3f3; }
+
 .monthly-answer {
   margin-top: 8px; font-size: 16px; font-weight: 600;
   display: none;
@@ -587,17 +579,18 @@ body {
   </div>
   <div class="progress-bar"><div class="progress-fill" id="monthly-progress-bar"></div></div>
   <div class="monthly-word-display" id="monthly-card">
-    <div class="prompt" id="monthly-prompt">听读音，写出单词：</div>
+    <div class="prompt" id="monthly-prompt">听读音，默写单词：</div>
     <div class="meaning-hint" id="monthly-meaning"></div>
     <button class="tts-btn" onclick="speakMonthlyWord()">🔊 播放读音</button>
-    <div class="monthly-input-wrap">
-      <input class="monthly-input" id="monthly-input" type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
-        placeholder="输入单词..." onkeydown="if(event.key==='Enter')checkMonthlyWord()">
+    <div class="canvas-wrap" style="margin-top:12px">
+      <canvas id="monthly-canvas"></canvas>
+      <div class="canvas-label" id="monthly-canvas-label">✍️ 在此默写</div>
     </div>
     <div class="monthly-answer" id="monthly-answer"></div>
     <div class="exam-actions" style="margin-top:16px">
       <button class="btn-mistake" id="btn-monthly-mistake" onclick="toggleMonthlyMistake()">📕 错题本</button>
-      <button class="btn-submit" id="btn-monthly-next" onclick="checkMonthlyWord()">确认 ✓</button>
+      <button class="clear-canvas" onclick="clearCanvas('monthly')" style="margin:0;min-height:48px;flex:0.5">清除</button>
+      <button class="btn-submit" id="btn-monthly-next" onclick="monthlyNext()">看答案</button>
     </div>
   </div>
   <div class="monthly-result" id="monthly-result" style="display:none">
@@ -1106,8 +1099,8 @@ function initCanvas(canvasId) {
 }
 
 function clearCanvas(which) {
-  const id = which === 'learn' ? 'learn-canvas' : 'exam-canvas';
-  const labelId = which === 'learn' ? 'canvas-label' : 'exam-canvas-label';
+  const id = which === 'learn' ? 'learn-canvas' : which === 'monthly' ? 'monthly-canvas' : 'exam-canvas';
+  const labelId = which === 'learn' ? 'canvas-label' : which === 'monthly' ? 'monthly-canvas-label' : 'exam-canvas-label';
   const c = document.getElementById(id);
   if (c) {
     const ctx = c.getContext('2d');
@@ -1511,60 +1504,77 @@ function startMonthlyReviewWithWords(words, scope) {
 function renderMonthlyCard() {
   const w = monthlyWords[monthlyIdx];
   const total = monthlyWords.length;
-  document.getElementById('monthly-progress-text').textContent = `月度听写 ${monthlyIdx + 1}/${total}`;
+  document.getElementById('monthly-progress-text').textContent = `听写 ${monthlyIdx + 1}/${total}`;
   document.getElementById('monthly-progress-bar').style.width = `${(monthlyIdx + 1) / total * 100}%`;
   document.getElementById('monthly-meaning').textContent = `💡 提示：${w.meaning}`;
-  document.getElementById('monthly-input').value = '';
-  document.getElementById('monthly-input').className = 'monthly-input';
-  document.getElementById('monthly-input').disabled = false;
   document.getElementById('monthly-answer').className = 'monthly-answer';
   document.getElementById('monthly-answer').style.display = 'none';
-  document.getElementById('btn-monthly-next').textContent = '确认 ✓';
+  document.getElementById('btn-monthly-next').textContent = '看答案';
   monthlyAnswered = false;
   monthlyMistakeAdded = !!state.mistakes[w.id];
   updateMonthlyMistakeBtn();
+  clearCanvas('monthly');
 
   // Auto play sound
-  setTimeout(() => speakMonthlyWord(), 300);
-  setTimeout(() => document.getElementById('monthly-input').focus(), 400);
+  setTimeout(() => {
+    speakMonthlyWord();
+    initCanvas('monthly-canvas');
+  }, 300);
 }
 
 function speakMonthlyWord() {
   if (monthlyWords.length) speak(monthlyWords[monthlyIdx].word);
 }
 
-function checkMonthlyWord() {
+function monthlyNext() {
   if (!monthlyAnswered) {
-    // Check answer
-    const input = document.getElementById('monthly-input');
-    const answer = input.value.trim().toLowerCase();
-    const correct = monthlyWords[monthlyIdx].word.toLowerCase();
-    const isCorrect = answer === correct;
-
+    // Show answer — user self-judges
     monthlyAnswered = true;
-    input.disabled = true;
-
+    const w = monthlyWords[monthlyIdx];
     const answerEl = document.getElementById('monthly-answer');
-    if (isCorrect) {
-      monthlyCorrect++;
-      input.className = 'monthly-input correct';
-      answerEl.textContent = '✅ 正确！';
-      answerEl.className = 'monthly-answer show correct';
-    } else {
-      input.className = 'monthly-input wrong';
-      answerEl.textContent = `❌ 正确答案：${monthlyWords[monthlyIdx].word}`;
-      answerEl.className = 'monthly-answer show wrong';
-    }
+    answerEl.textContent = `答案：${w.word}（${w.phonics}）`;
+    answerEl.className = 'monthly-answer show';
     answerEl.style.display = 'block';
-    document.getElementById('btn-monthly-next').textContent = monthlyIdx < monthlyWords.length - 1 ? '下一个 →' : '查看结果';
+    answerEl.style.color = 'var(--primary-dark)';
+    answerEl.style.fontSize = '20px';
+    answerEl.style.fontWeight = '700';
+    answerEl.style.marginTop = '12px';
+
+    // Show correct/wrong buttons
+    document.getElementById('btn-monthly-next').textContent = '✅ 写对了';
+    document.getElementById('btn-monthly-next').onclick = () => monthlyJudge(true);
+
+    // Replace mistake btn temporarily with "wrong" btn
+    const mistakeBtn = document.getElementById('btn-monthly-mistake');
+    mistakeBtn.textContent = '❌ 写错了';
+    mistakeBtn.className = 'btn-mistake';
+    mistakeBtn.onclick = () => monthlyJudge(false);
+  }
+}
+
+function monthlyJudge(correct) {
+  if (correct) {
+    monthlyCorrect++;
+    showToast('✅ 正确！');
   } else {
-    // Next word or finish
-    if (monthlyIdx < monthlyWords.length - 1) {
-      monthlyIdx++;
-      renderMonthlyCard();
-    } else {
-      finishMonthlyReview();
+    showToast('❌ 记住了，下次加油');
+    // Auto add to mistakes
+    const w = monthlyWords[monthlyIdx];
+    if (!state.mistakes[w.id]) {
+      state.mistakes[w.id] = { word: w.word, meaning: w.meaning, phonics: w.phonics, count: 1, date: todayStr() };
+      saveState();
     }
+  }
+
+  // Next or finish
+  if (monthlyIdx < monthlyWords.length - 1) {
+    monthlyIdx++;
+    // Reset button handlers
+    document.getElementById('btn-monthly-next').onclick = () => monthlyNext();
+    document.getElementById('btn-monthly-mistake').onclick = () => toggleMonthlyMistake();
+    renderMonthlyCard();
+  } else {
+    finishMonthlyReview();
   }
 }
 
