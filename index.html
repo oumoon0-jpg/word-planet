@@ -30,6 +30,64 @@ body {
   -webkit-overflow-scrolling: touch;
 }
 
+/* === Login Screen === */
+.login-screen {
+  position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+  background: linear-gradient(135deg, #FFF8F0, #e8faf8);
+  z-index: 500; display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 40px 30px; text-align: center;
+}
+.login-screen.hidden { display: none; }
+.login-screen .logo { font-size: 64px; margin-bottom: 12px; }
+.login-screen h1 { font-size: 28px; margin-bottom: 6px; color: var(--text); }
+.login-screen .tagline { font-size: 14px; color: var(--text-light); margin-bottom: 32px; }
+.login-input {
+  width: 100%; max-width: 280px; padding: 14px 18px;
+  border: 2px solid #e0e0e0; border-radius: 16px;
+  font-size: 16px; text-align: center; outline: none;
+  transition: border-color 0.2s;
+}
+.login-input:focus { border-color: var(--primary); }
+.login-input::placeholder { color: #ccc; }
+.login-btn {
+  margin-top: 16px; padding: 14px 48px;
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  color: white; border: none; border-radius: 16px;
+  font-size: 17px; font-weight: 600; cursor: pointer;
+  box-shadow: 0 6px 20px rgba(78,205,196,0.4);
+  transition: transform 0.15s;
+}
+.login-btn:active { transform: scale(0.96); }
+.login-btn:disabled { opacity: 0.4; }
+.login-history { margin-top: 24px; width: 100%; max-width: 280px; }
+.login-history-title { font-size: 13px; color: var(--text-light); margin-bottom: 8px; }
+.login-user-btn {
+  display: flex; align-items: center; justify-content: space-between;
+  width: 100%; padding: 12px 16px; margin-bottom: 8px;
+  background: white; border: 1px solid #eee; border-radius: 12px;
+  font-size: 15px; cursor: pointer; transition: transform 0.15s;
+}
+.login-user-btn:active { transform: scale(0.97); }
+.login-user-btn .name { font-weight: 600; color: var(--text); }
+.login-user-btn .info { font-size: 12px; color: var(--text-light); }
+
+/* === User Bar (top) === */
+.user-bar {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 10px 4px 0;
+}
+.user-bar .user-info {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 14px; color: var(--text-light);
+}
+.user-bar .user-info .avatar { font-size: 22px; }
+.user-bar .user-info .uname { font-weight: 600; color: var(--text); }
+.user-bar .logout-btn {
+  font-size: 12px; color: #bbb; background: none; border: 1px solid #ddd;
+  padding: 4px 12px; border-radius: 20px; cursor: pointer;
+}
+
 /* === Tab Bar === */
 .tab-bar {
   position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
@@ -55,7 +113,7 @@ body {
 .page.active { display: block; }
 
 /* === Home === */
-.home-header { text-align: center; padding: 24px 0 16px; }
+.home-header { text-align: center; padding: 12px 0 16px; }
 .home-header h1 { font-size: 28px; margin-bottom: 4px; }
 .home-header .subtitle { color: var(--text-light); font-size: 14px; }
 
@@ -90,10 +148,7 @@ body {
   padding: 5px 10px; border-radius: 20px; font-size: 13px; font-weight: 500;
 }
 
-/* Data management */
-.data-section {
-  margin-top: 16px; display: flex; gap: 10px;
-}
+.data-section { margin-top: 16px; display: flex; gap: 10px; }
 .data-btn {
   flex: 1; padding: 10px; background: var(--card);
   border: 1px solid #eee; border-radius: 12px;
@@ -134,7 +189,6 @@ body {
 }
 .tts-btn:active { transform: scale(0.94); }
 
-/* Handwriting Canvas */
 .canvas-wrap { margin-top: 16px; position: relative; }
 .canvas-wrap canvas {
   width: 100%; height: 140px;
@@ -164,7 +218,7 @@ body {
 .btn-next { background: var(--primary); color: white; }
 .btn-exam { background: linear-gradient(135deg, var(--coral), #ee5a5a); color: white; }
 
-/* === Exam Page === */
+/* === Exam === */
 .exam-card {
   background: var(--card); border-radius: 24px;
   padding: 28px 20px; text-align: center;
@@ -209,7 +263,9 @@ body {
   aspect-ratio: 1; display: flex; flex-direction: column;
   align-items: center; justify-content: center;
   border-radius: 12px; font-size: 14px; cursor: pointer; position: relative;
+  transition: background 0.2s;
 }
+.cal-grid .day:active:not(.empty) { background: #e0f0ef; }
 .cal-grid .day.empty { cursor: default; }
 .cal-grid .day.done { background: #e8faf8; color: var(--primary-dark); font-weight: 600; }
 .cal-grid .day.done::after { content: "⭐"; font-size: 9px; }
@@ -217,7 +273,54 @@ body {
   background: var(--primary); color: white; font-weight: 700;
   box-shadow: 0 3px 10px rgba(78,205,196,0.4);
 }
+.cal-grid .day.has-words { border: 2px solid var(--primary); }
 .cal-grid .day.future { color: #ccc; }
+
+/* === Day Detail Modal === */
+.day-modal-overlay {
+  position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.4); z-index: 300;
+  display: none; align-items: flex-end; justify-content: center;
+}
+.day-modal-overlay.show { display: flex; }
+.day-modal {
+  background: white; border-radius: 24px 24px 0 0;
+  width: 100%; max-width: 480px; max-height: 70vh;
+  padding: 20px; overflow-y: auto;
+  animation: slideUp 0.3s ease;
+}
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+.day-modal .modal-header {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 16px;
+}
+.day-modal .modal-header h3 { font-size: 18px; }
+.day-modal .modal-close {
+  font-size: 24px; color: #999; cursor: pointer;
+  padding: 4px 8px; user-select: none;
+}
+.day-modal .modal-status {
+  display: inline-block; padding: 4px 12px; border-radius: 20px;
+  font-size: 12px; font-weight: 600; margin-bottom: 12px;
+}
+.day-modal .modal-status.done { background: #e8faf8; color: var(--primary-dark); }
+.day-modal .modal-status.pending { background: #fff3e0; color: #f57c00; }
+.day-modal .modal-status.future { background: #f5f5f5; color: #999; }
+.day-modal .word-list { list-style: none; }
+.day-modal .word-list li {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 12px 0; border-bottom: 1px solid #f0f0f0;
+}
+.day-modal .word-list li:last-child { border-bottom: none; }
+.day-modal .word-list .w-word { font-size: 17px; font-weight: 600; }
+.day-modal .word-list .w-phonics { font-size: 13px; color: #999; }
+.day-modal .word-list .w-meaning { font-size: 14px; color: var(--text-light); text-align: right; }
+.day-modal .word-list .w-speak {
+  font-size: 20px; cursor: pointer; padding: 4px 8px; user-select: none;
+}
 
 /* === Mistakes === */
 .mistake-list { margin-top: 12px; }
@@ -271,15 +374,22 @@ body {
   70% { transform: scale(0.9); }
   100% { transform: scale(1); }
 }
-@keyframes fadeSlideIn {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
-}
 </style>
 </head>
 <body>
 
 <div class="toast" id="toast"></div>
+
+<!-- ===== Login Screen ===== -->
+<div class="login-screen" id="login-screen">
+  <div class="logo">🌍</div>
+  <h1>单词星球</h1>
+  <div class="tagline">每天10个单词，积少成多</div>
+  <input class="login-input" id="login-name" type="text" placeholder="输入你的名字" maxlength="20"
+    onkeydown="if(event.key==='Enter')doLogin()">
+  <button class="login-btn" onclick="doLogin()">开始学习</button>
+  <div class="login-history" id="login-history"></div>
+</div>
 
 <!-- ===== Tab Bar ===== -->
 <nav class="tab-bar">
@@ -290,6 +400,13 @@ body {
 
 <!-- ===== Home ===== -->
 <div id="page-home" class="page active">
+  <div class="user-bar">
+    <div class="user-info">
+      <span class="avatar">👤</span>
+      <span class="uname" id="user-display-name"></span>
+    </div>
+    <button class="logout-btn" onclick="doLogout()">切换用户</button>
+  </div>
   <div class="home-header">
     <h1>🌍 单词星球</h1>
     <div class="subtitle">每天10个单词，积少成多</div>
@@ -387,6 +504,18 @@ body {
   <div id="mistake-list" class="mistake-list"></div>
 </div>
 
+<!-- ===== Day Detail Modal ===== -->
+<div class="day-modal-overlay" id="day-modal-overlay" onclick="closeDayModal(event)">
+  <div class="day-modal" id="day-modal">
+    <div class="modal-header">
+      <h3 id="modal-title"></h3>
+      <span class="modal-close" onclick="closeDayModal()">✕</span>
+    </div>
+    <div id="modal-status-wrap"></div>
+    <ul class="word-list" id="modal-word-list"></ul>
+  </div>
+</div>
+
 <!-- ===== Complete ===== -->
 <div class="complete-screen" id="complete-screen">
   <div class="big-star">⭐</div>
@@ -395,21 +524,121 @@ body {
   <button onclick="completeBack()">返回首页</button>
 </div>
 
-<!-- 3000-word dataset -->
 <script src="words.js"></script>
 
 <script>
 // ============================================================
 // Constants
 // ============================================================
-const LS_KEY = 'wordplanet_v2';
 const WORDS_PER_DAY = 10;
 const TOTAL_DAYS = Math.ceil(WORDS_ALL.length / WORDS_PER_DAY);
+const USER_LIST_KEY = 'wordplanet_users';
 
 // ============================================================
-// State
+// User Management
 // ============================================================
-let state = loadState();
+let currentUser = null;
+let state = null;
+
+function getUsers() {
+  try { return JSON.parse(localStorage.getItem(USER_LIST_KEY)) || []; } catch(e) { return []; }
+}
+function saveUsers(users) { localStorage.setItem(USER_LIST_KEY, JSON.stringify(users)); }
+function stateKey(name) { return 'wordplanet_u_' + name; }
+
+function loadState() {
+  if (!currentUser) return { days: {}, mistakes: {}, stars: 0, nextDay: 1 };
+  try {
+    const raw = localStorage.getItem(stateKey(currentUser));
+    if (raw) return JSON.parse(raw);
+  } catch(e) {}
+  return { days: {}, mistakes: {}, stars: 0, nextDay: 1 };
+}
+function saveState() {
+  if (!currentUser) return;
+  localStorage.setItem(stateKey(currentUser), JSON.stringify(state));
+}
+
+// Migrate old data (before user system) into first user
+function migrateOldData(name) {
+  const old = localStorage.getItem('wordplanet_v2');
+  if (old && !localStorage.getItem(stateKey(name))) {
+    localStorage.setItem(stateKey(name), old);
+  }
+}
+
+function showLoginScreen() {
+  document.getElementById('login-screen').classList.remove('hidden');
+  const hist = document.getElementById('login-history');
+  const users = getUsers();
+  if (users.length) {
+    let html = '<div class="login-history-title">已有用户，点击直接登录：</div>';
+    users.forEach(u => {
+      const st = loadUserPreview(u.name);
+      html += `<div class="login-user-btn" onclick="quickLogin('${u.name.replace(/'/g,"\\'")}')">
+        <span class="name">👤 ${u.name}</span>
+        <span class="info">已学${st.days}天 / ${st.words}词</span>
+      </div>`;
+    });
+    hist.innerHTML = html;
+  } else {
+    hist.innerHTML = '';
+  }
+}
+
+function loadUserPreview(name) {
+  try {
+    const raw = localStorage.getItem(stateKey(name));
+    if (raw) {
+      const s = JSON.parse(raw);
+      const days = Object.keys(s.days).filter(k => s.days[k].status === 2).length;
+      return { days, words: days * WORDS_PER_DAY };
+    }
+  } catch(e) {}
+  return { days: 0, words: 0 };
+}
+
+function doLogin() {
+  const input = document.getElementById('login-name');
+  const name = input.value.trim();
+  if (!name) { input.focus(); showToast('请输入你的名字'); return; }
+  loginAs(name);
+}
+
+function quickLogin(name) { loginAs(name); }
+
+function loginAs(name) {
+  migrateOldData(name);
+  currentUser = name;
+  state = loadState();
+  if (!state.nextDay) state.nextDay = 1;
+
+  // Add to user list if new
+  const users = getUsers();
+  if (!users.find(u => u.name === name)) {
+    users.push({ name, created: new Date().toISOString() });
+    saveUsers(users);
+  }
+
+  // Remember last user
+  localStorage.setItem('wordplanet_lastuser', name);
+
+  document.getElementById('login-screen').classList.add('hidden');
+  document.getElementById('user-display-name').textContent = name;
+  refreshHome();
+}
+
+function doLogout() {
+  currentUser = null;
+  state = null;
+  localStorage.removeItem('wordplanet_lastuser');
+  showPage('home');
+  showLoginScreen();
+}
+
+// ============================================================
+// State helpers
+// ============================================================
 let currentIdx = 0;
 let examIdx = 0;
 let examMistakeAdded = false;
@@ -417,27 +646,14 @@ let todayWords = [];
 let calMonth = new Date().getMonth();
 let calYear = new Date().getFullYear();
 
-function loadState() {
-  try {
-    const raw = localStorage.getItem(LS_KEY);
-    if (raw) return JSON.parse(raw);
-  } catch(e) {}
-  return { days: {}, mistakes: {}, stars: 0, nextDay: 1 };
-}
-function saveState() {
-  localStorage.setItem(LS_KEY, JSON.stringify(state));
-}
 function todayStr() {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
 
-// 方案E: 断档接续 — nextDay tracks which day_index to learn next
 function getCurrentDay() {
   const today = todayStr();
-  // If today already started, use that day's dayIndex
   if (state.days[today] && state.days[today].dayIndex) return state.days[today].dayIndex;
-  // Otherwise use nextDay (sequential, never skips)
   if (!state.nextDay) state.nextDay = 1;
   return state.nextDay;
 }
@@ -467,7 +683,6 @@ function showPage(name) {
   document.querySelectorAll('.tab').forEach((t, i) => {
     t.classList.toggle('active', ['home','calendar','mistakes'][i] === name);
   });
-  // Show/hide tab bar
   document.querySelector('.tab-bar').style.display = (name === 'learn' || name === 'exam') ? 'none' : 'flex';
   if (name === 'home') refreshHome();
   if (name === 'calendar') renderCalendar();
@@ -478,6 +693,7 @@ function showPage(name) {
 // Home
 // ============================================================
 function refreshHome() {
+  if (!state) return;
   const today = todayStr();
   const dayData = state.days[today];
   const streak = calcStreak();
@@ -540,7 +756,7 @@ function calcStreak() {
 // ============================================================
 function exportData() {
   const data = {
-    version: 2,
+    version: 2, user: currentUser,
     exported: new Date().toISOString(),
     state: state
   };
@@ -548,7 +764,7 @@ function exportData() {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `单词星球_进度_${todayStr()}.json`;
+  a.download = `单词星球_${currentUser}_${todayStr()}.json`;
   a.click();
   URL.revokeObjectURL(url);
   showToast('✅ 进度已导出');
@@ -641,13 +857,11 @@ function speakCurrent() { speak(todayWords[currentIdx].word); }
 function speakExam() { speak(todayWords[examIdx].word); }
 
 // ============================================================
-// Canvas (optimized for mobile touch)
+// Canvas
 // ============================================================
 function initCanvas(canvasId) {
   const oldCanvas = document.getElementById(canvasId);
   if (!oldCanvas) return;
-
-  // Clone to remove old listeners
   const canvas = oldCanvas.cloneNode(true);
   oldCanvas.parentNode.replaceChild(canvas, oldCanvas);
   canvas.id = canvasId;
@@ -671,41 +885,28 @@ function initCanvas(canvasId) {
     const t = e.touches ? e.touches[0] : e;
     return { x: t.clientX - r.left, y: t.clientY - r.top };
   };
-
   const start = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
+    e.preventDefault(); e.stopPropagation();
     isDrawing = true;
     const p = getPos(e);
     lastX = p.x; lastY = p.y;
-    ctx.beginPath();
-    ctx.moveTo(p.x, p.y);
-    // hide label
+    ctx.beginPath(); ctx.moveTo(p.x, p.y);
     const labelId = canvasId === 'learn-canvas' ? 'canvas-label' : 'exam-canvas-label';
     const label = document.getElementById(labelId);
     if (label) label.style.display = 'none';
   };
-
   const move = (e) => {
     if (!isDrawing) return;
-    e.preventDefault();
-    e.stopPropagation();
+    e.preventDefault(); e.stopPropagation();
     const p = getPos(e);
-    // Smooth line with quadratic curve
     const midX = (lastX + p.x) / 2;
     const midY = (lastY + p.y) / 2;
     ctx.quadraticCurveTo(lastX, lastY, midX, midY);
     ctx.stroke();
-    ctx.beginPath();
-    ctx.moveTo(midX, midY);
+    ctx.beginPath(); ctx.moveTo(midX, midY);
     lastX = p.x; lastY = p.y;
   };
-
-  const end = (e) => {
-    if (!isDrawing) return;
-    isDrawing = false;
-    ctx.beginPath();
-  };
+  const end = () => { if (!isDrawing) return; isDrawing = false; ctx.beginPath(); };
 
   canvas.addEventListener('mousedown', start);
   canvas.addEventListener('mousemove', move);
@@ -801,7 +1002,6 @@ function finishToday() {
   state.days[today].status = 2;
   state.days[today].stars = 1;
   state.stars = (state.stars || 0) + 1;
-  // Advance nextDay (方案E: sequential, never skip)
   state.nextDay = (state.days[today].dayIndex || state.nextDay) + 1;
 
   const streak = calcStreak();
@@ -822,7 +1022,7 @@ function completeBack() {
 }
 
 // ============================================================
-// Calendar
+// Calendar (interactive!)
 // ============================================================
 function calNav(dir) {
   calMonth += dir;
@@ -832,6 +1032,7 @@ function calNav(dir) {
 }
 
 function renderCalendar() {
+  if (!state) return;
   const months = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
   document.getElementById('cal-title').textContent = `${calYear}年 ${months[calMonth]}`;
 
@@ -846,6 +1047,12 @@ function renderCalendar() {
 
   for (let i = 0; i < shift; i++) html += `<div class="day empty"></div>`;
 
+  // Build a map: date string → dayIndex for completed days
+  const dateToDay = {};
+  Object.keys(state.days).forEach(ds => {
+    if (state.days[ds].dayIndex) dateToDay[ds] = state.days[ds].dayIndex;
+  });
+
   let monthDone = 0;
   for (let d = 1; d <= daysInMonth; d++) {
     const ds = `${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
@@ -853,20 +1060,109 @@ function renderCalendar() {
     const isDone = state.days[ds] && state.days[ds].status === 2;
     const isFuture = new Date(calYear, calMonth, d) > today;
     if (isDone) monthDone++;
+
     let cls = 'day';
     if (isToday) cls += ' today';
     else if (isDone) cls += ' done';
     else if (isFuture) cls += ' future';
-    html += `<div class="${cls}">${d}</div>`;
+
+    // Calculate which dayIndex this calendar date maps to
+    // For past/today: show what was learned. For future: show what will be learned
+    html += `<div class="${cls}" onclick="openDayModal('${ds}')">${d}</div>`;
   }
   grid.innerHTML = html;
   document.getElementById('cal-summary').textContent = `本月学习 ${monthDone} 天`;
 }
 
 // ============================================================
+// Day Detail Modal
+// ============================================================
+function openDayModal(dateStr) {
+  const overlay = document.getElementById('day-modal-overlay');
+  const title = document.getElementById('modal-title');
+  const statusWrap = document.getElementById('modal-status-wrap');
+  const wordList = document.getElementById('modal-word-list');
+
+  // Parse date
+  const [y, m, d] = dateStr.split('-').map(Number);
+  title.textContent = `${m}月${d}日`;
+
+  const dayData = state.days[dateStr];
+  const today = new Date();
+  const thisDate = new Date(y, m-1, d);
+  const isFuture = thisDate > today;
+  const isToday = thisDate.toDateString() === today.toDateString();
+
+  let dayIndex = null;
+  let statusHtml = '';
+
+  if (dayData && dayData.dayIndex) {
+    // This date has learning record
+    dayIndex = dayData.dayIndex;
+    if (dayData.status === 2) {
+      statusHtml = `<span class="modal-status done">✅ 已完成 · 第${dayIndex}天</span>`;
+    } else {
+      statusHtml = `<span class="modal-status pending">📖 学习中 · 第${dayIndex}天</span>`;
+    }
+  } else if (isToday) {
+    // Today, not started
+    dayIndex = getCurrentDay();
+    statusHtml = `<span class="modal-status pending">📋 今日待学 · 第${dayIndex}天</span>`;
+  } else if (isFuture) {
+    // Future: calculate which day it would be
+    // Days from today
+    const todayDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const diffDays = Math.floor((thisDate - todayDate) / 86400000);
+    dayIndex = getCurrentDay() + diffDays;
+    if (dayIndex > TOTAL_DAYS) {
+      statusHtml = `<span class="modal-status future">📚 超出词库范围</span>`;
+      dayIndex = null;
+    } else {
+      statusHtml = `<span class="modal-status future">🔮 预计 · 第${dayIndex}天</span>`;
+    }
+  } else {
+    // Past, no record
+    statusHtml = `<span class="modal-status future">— 未学习</span>`;
+  }
+
+  statusWrap.innerHTML = statusHtml;
+
+  // Show words
+  if (dayIndex) {
+    const words = getWordsForDay(dayIndex);
+    if (words.length) {
+      wordList.innerHTML = words.map(w => `
+        <li>
+          <div>
+            <div class="w-word">${w.word}</div>
+            <div class="w-phonics">${w.phonics}</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <div class="w-meaning">${w.meaning}</div>
+            <span class="w-speak" onclick="speak('${w.word.replace(/'/g,"\\'")}')">🔊</span>
+          </div>
+        </li>
+      `).join('');
+    } else {
+      wordList.innerHTML = '<li style="justify-content:center;color:#ccc">暂无单词数据</li>';
+    }
+  } else {
+    wordList.innerHTML = '<li style="justify-content:center;color:#ccc">暂无单词数据</li>';
+  }
+
+  overlay.classList.add('show');
+}
+
+function closeDayModal(event) {
+  if (event && event.target !== document.getElementById('day-modal-overlay')) return;
+  document.getElementById('day-modal-overlay').classList.remove('show');
+}
+
+// ============================================================
 // Mistakes
 // ============================================================
 function renderMistakes() {
+  if (!state) return;
   const list = document.getElementById('mistake-list');
   const ids = Object.keys(state.mistakes);
   if (!ids.length) {
@@ -922,13 +1218,15 @@ function launchConfetti() {
 // ============================================================
 // Init
 // ============================================================
-// Migrate from v1 if needed
-if (!state.nextDay) {
-  const completedDays = Object.keys(state.days).filter(k => state.days[k].status === 2).length;
-  state.nextDay = completedDays + 1;
-  saveState();
-}
-refreshHome();
+(function init() {
+  const lastUser = localStorage.getItem('wordplanet_lastuser');
+  if (lastUser && localStorage.getItem(stateKey(lastUser))) {
+    // Auto-login last user
+    loginAs(lastUser);
+  } else {
+    showLoginScreen();
+  }
+})();
 </script>
 </body>
 </html>
